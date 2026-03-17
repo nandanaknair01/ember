@@ -1,111 +1,166 @@
-<<<<<<< HEAD
-# Ember - Menopause Wellness Companion
+# ember 🔥
 
-A supportive wellness web app for women 40+ navigating menopause, offering tracking, insights, and community support.
+> An AI-powered wellness companion for women navigating menopause.
+> Voice journalling, emotional AI synthesis, cycle and symptom tracking,
+> personalised weekly insights, and a location-aware community
 
-## Features
+## What is Ember?
 
-- **Authentication**: Google OAuth and email/password sign-in
-- **Personalized Onboarding**: 4-step flow to understand your journey
-- **Dashboard**: Daily affirmations, quick logging, and personalized content
-- **Learning Hub**: Educational content about menopause stages and symptoms
-- **Journal**: Voice, chat, and text modes with AI-powered insights
-- **Tracking**: Monitor cycles, symptoms, sleep, and supplements
-- **Insights**: AI-generated summaries and data visualizations
-- **Community**: Chat with others and find wellness buddies
-- **Diary**: Chronological feed of all journal entries
+Menopause affects every woman. Yet most navigate it without adequate 
+support, reliable information, or a community that truly understands 
+what they're going through.
 
-## Design System
+Ember is built to change that.
 
-- **Fonts**: Cormorant Garamond (headings) + DM Sans (body)
-- **Colors**: Warm, organic palette
-  - Background: `#fdf8f5`
-  - Dark brown: `#2d1f14`
-  - Terracotta accent: `#c47c50`
-  - Muted text: `#8a7060`
-  - Borders: `#e8ddd4`
+It combines voice-based emotional journalling, conversational AI 
+counselling, physical health tracking, and AI-generated insights into 
+a single platform — designed with warmth, not clinical distance.
+
+Features
+
+**🎙️ Voice Journal**  
+Speak freely. Ember transcribes your voice, detects emotional tone, 
+and produces a structured journal entry — what you felt, why it may 
+be happening given your cycle phase, and what you could try.
+
+**💬 AI Counsellor**  
+A conversational journalling mode. Talk through your day with a warm, 
+menopause-aware AI companion and arrive at your own clarity.
+
+**📊 Cross-data Insights**  
+Weekly AI synthesis that correlates mood, cycle phase, sleep quality, 
+and symptoms into one narrative. Patterns you'd never spot alone.
+
+**🩺 Health Tracking**  
+Log your cycle, symptoms (12 indicators, severity 1–3), sleep quality, 
+and supplements — all feeding the insights engine.
+
+**📖 Learn & Grow**  
+Editorial content across perimenopause, menopause, and postmenopause. 
+Stage guides, daily reads, and a searchable library — evidence-based 
+and written with care.
+
+**📅 Daily Diary**  
+A complete longitudinal record of every journal entry, daily log, 
+and AI insight — searchable, expandable, and yours.
+
+**👯 Community**  
+Find women near you at the same stage, with shared interests. 
+Topic-threaded community chat and location-based buddy matching 
+with activity suggestions.
+
+---
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
-- **Backend**: Supabase (auth + database + realtime)
-- **Charts**: Recharts
-- **AI**: Claude API integration (ready for implementation)
-- **Deployment**: Vercel
+| Frontend - Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Database & Auth - Supabase (PostgreSQL + RLS) |
+| File Storage - Supabase Storage |
+| Realtime Chat - Supabase Realtime |
+| Speech-to-Text - Web Speech API / Whisper (open source) - yet to be built
+| AI / LLM -  Groq API — Llama 3.3 70B (open source, free tier) - yet to be built
+| Charts - Recharts |
+| Deployment | Vercel (free tier) - yet to be built
 
-## Installation
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+Getting Started
 
-3. Set up environment variables:
-   ```bash
-   cp .env.local.example .env.local
-   ```
-   Fill in your Supabase and Claude API credentials.
+### Prerequisites
 
-4. Set up Supabase database:
-   - Run the SQL schema from `src/lib/database.ts` in your Supabase SQL editor
-   - Enable Google OAuth in Supabase Auth settings
+- Node.js 18+
+- A Supabase account (free tier)
+- A Groq API key (free tier — [console.groq.com](https://console.groq.com))
 
-5. Run the development server:
-   ```bash
-   npm run dev
-   ```
+### Installation
+```bash
+git clone https://github.com/yourusername/ember.git
+cd ember
+npm install
+```
+
+### Environment Variables
+
+Create a `.env.local` file in the root:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+GROQ_API_KEY=your_groq_api_key
+```
+
+### Database Setup
+
+Run the schema in your Supabase SQL editor:
+```bash
+# File located at:
+supabase/schema.sql
+```
+
+### Run Locally
+```bash
+npm run dev
+# Visit http://localhost:3000
+```
+
+---
+
+## App Structure
+```
+ember/
+├── app/
+│   ├── auth/               # Login + signup
+│   ├── onboarding/         # 4-step intake flow
+│   ├── dashboard/          # Home hub
+│   ├── learn/              # Stage guide, articles, library
+│   ├── journal/            # Voice, chat, and text journalling
+│   ├── track/              # Cycle, symptoms, sleep, supplements
+│   ├── insights/           # AI weekly summary + charts
+│   ├── diary/              # Daily reflections feed
+│   ├── community/          # Chat + buddy matching
+│   └── api/                # AI synthesis endpoints
+├── lib/
+│   └── supabase.ts         # Supabase client
+├── components/             # Shared UI components
+└── supabase/
+    └── schema.sql          # Full database schema
+```
+
+---
 
 ## Database Schema
+```sql
+profiles          -- user profile, stage, symptoms, interests, goals
+journal_entries   -- voice/chat/text entries + AI synthesis (JSONB)
+cycle_logs        -- menstrual cycle tracking
+symptom_logs      -- daily symptom severity (1–3)
+daily_logs        -- sleep, mood score, supplements
+community_posts   -- chat messages
+buddy_matches     -- location + interest-based connections
+```
 
-The app uses the following main tables:
+## AI Endpoints
 
-- `profiles`: User information and onboarding data
-- `journal_entries`: Voice, chat, and text journal entries
-- `cycle_logs`: Menstrual cycle tracking
-- `symptom_logs`: Daily symptom logging
-- `daily_logs`: Sleep, supplements, and mood tracking
-- `community_posts`: Community chat messages
-- `buddy_matches`: User connections
+| Route | Purpose |
+|---|---|
+| `POST /api/journal/synthesise` | Voice transcript → mood, cause, next steps |
+| `POST /api/journal/counsel` | Streaming conversational counsellor |
+| `POST /api/insights/synthesise` | 30-day data → weekly narrative summary |
 
-## Authentication & Security
+Roadmap - next steps
 
-- Supabase Auth for user management
-- Row Level Security (RLS) enabled on all tables
-- Users can only access their own data
-- OAuth integration with Google
+- [ ] Hume AI integration for voice emotion analysis
+- [ ] pgvector semantic search across journal entries  
+- [ ] Doctor export — styled PDF health summary
+- [ ] Push notification reminders
+- [ ] Mobile app (React Native)
+- [ ] Wearable integration (sleep + heart rate data)
 
-## AI Integration
 
-The app is ready for Claude API integration:
+Why Ember?
 
-- `/api/journal/synthesize` - Analyzes journal entries
-- `/api/journal/counsel` - Provides chat-based counseling
-- `/api/insights/synthesize` - Generates weekly summaries
+1.2 billion women will be in menopause or postmenopause by 2030.  
+They are underserved, digitally engaged, and waiting for something  
+built with them — not just for them.
 
-Currently using mock responses for demo purposes.
+Built With
 
-## Responsive Design
-
-- Mobile-first approach
-- Bottom navigation on mobile
-- Left sidebar on desktop
-- Consistent warm, editorial aesthetic
-
-## Deployment
-
-1. Push to GitHub
-2. Connect repository to Vercel
-3. Set environment variables in Vercel dashboard
-4. Deploy!
-
-## Contributing
-
-This is a demo project showcasing modern web development practices for women's health tech.
-
-## License
-
-MIT License - feel free to use this as a starting point for your own projects.
-=======
-# ember
->>>>>>> fa0058921e6470bb803a03fededb863910d883b7
+This project was built in 48 hours as part of a hackathon, by Nandana and Parnika
