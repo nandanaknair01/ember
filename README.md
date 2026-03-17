@@ -1,4 +1,4 @@
-# ember 🔥
+# ember
 
 > An AI-powered wellness companion for women navigating menopause.
 > Voice journalling, emotional AI synthesis, cycle and symptom tracking,
