@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Ember - Menopause Wellness Companion
 
 A supportive wellness web app for women 40+ navigating menopause, offering tracking, insights, and community support.
@@ -105,3 +106,6 @@ This is a demo project showcasing modern web development practices for women's h
 ## License
 
 MIT License - feel free to use this as a starting point for your own projects.
+=======
+# ember
+>>>>>>> fa0058921e6470bb803a03fededb863910d883b7
