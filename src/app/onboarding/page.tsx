@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Pill } from "@/components/ui/pill"
 import { Card, CardContent } from "@/components/ui/card"
+import StageCard from "@/components/StageCard"
 
 interface OnboardingData {
   name: string
@@ -15,20 +16,71 @@ interface OnboardingData {
   symptoms: string[]
   interests: string[]
   goals: string[]
+  location: {
+    locality: string
+    city: string
+    India_state: string
+  }
 }
 
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [existingProfile, setExistingProfile] = useState<any>(null)
   const [data, setData] = useState<OnboardingData>({
     name: "",
     age: "",
     menopauseStage: "",
     symptoms: [],
     interests: [],
-    goals: []
+    goals: [],
+    location: {
+      locality: "",
+      city: "",
+      India_state: ""
+    }
   })
+
+  useEffect(() => {
+    const loadExistingProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) {
+          router.push('/auth')
+          return
+        }
+
+        // Fetch existing profile data
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        if (profile) {
+          setExistingProfile(profile)
+          // Pre-fill form with existing data
+          setData({
+            name: profile.name || "",
+            age: profile.age?.toString() || "",
+            menopauseStage: profile.stage || "",
+            symptoms: profile.symptoms || [],
+            interests: profile.interests || [],
+            goals: profile.goals || [],
+            location: {
+              locality: profile.locality || "",
+              city: profile.city || "",
+              India_state: profile.states || ""
+            }
+          })
+        }
+      } catch (error) {
+        console.error('Error loading existing profile:', error)
+      }
+    }
+    loadExistingProfile()
+  }, [])
 
   const symptoms = [
     "Hot flashes", "Brain fog", "Night sweats", "Mood swings", 
@@ -47,6 +99,14 @@ export default function OnboardingPage() {
     "Connect with community", "Expert guidance", "Holistic health"
   ]
 
+  const indianStates = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
+    "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+    "Uttarakhand", "West Bengal", "Delhi"
+  ]
+
   const menopauseStages = [
     { id: "Perimenopause", title: "Perimenopause", desc: "The transition period before menopause" },
     { id: "Menopause", title: "Menopause", desc: "12 months after your final period" },
@@ -63,20 +123,56 @@ export default function OnboardingPage() {
     }))
   }
 
+  const handleLocationChange = (field: 'locality' | 'city' | 'India_state', value: string) => {
+    setData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        [field]: value
+      }
+    }))
+  }
+
   const handleSubmit = async () => {
     setLoading(true)
     
-    // Mock behavior
-    console.log("Saving onboarding data:", data)
-    setTimeout(() => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        throw new Error('No user session')
+      }
+
+      // Create or update user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: session.user.id,
+          name: data.name,
+          age: data.age ? parseInt(data.age) : null,
+          stage: data.menopauseStage,
+          symptoms: data.symptoms,
+          interests: data.interests,
+          goals: data.goals,
+          locality: data.location.locality,
+          city: data.location.city,
+          India_state: data.location.India_state,
+          onboarding_complete: true,
+          updated_at: new Date().toISOString()
+        })
+
+      if (profileError) throw profileError
+
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Onboarding error:', error)
+      alert('Error saving onboarding data')
+    } finally {
       setLoading(false)
-      alert("Onboarding complete! (This is a demo)")
-      // In real app, would redirect to dashboard
-    }, 1000)
+    }
   }
 
   const nextStep = () => {
-    if (step < 4) setStep(step + 1)
+    if (step < 5) setStep(step + 1)
   }
 
   const prevStep = () => {
@@ -89,7 +185,7 @@ export default function OnboardingPage() {
       <div className="w-80 bg-[#2d1f14] p-8 text-white">
         <h2 className="font-serif text-2xl mb-8">Getting to know you</h2>
         <div className="space-y-4">
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <div key={s} className="flex items-center space-x-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                 s <= step ? 'bg-[#c47c50]' : 'bg-[#e8ddd4] text-[#2d1f14]'
@@ -101,6 +197,7 @@ export default function OnboardingPage() {
                 {s === 2 && 'Your stage'}
                 {s === 3 && 'Symptoms & interests'}
                 {s === 4 && 'Your goals'}
+                {s === 5 && 'Location'}
               </span>
             </div>
           ))}
@@ -155,20 +252,13 @@ export default function OnboardingPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 {menopauseStages.map((stage) => (
-                  <Card
+                  <StageCard
                     key={stage.id}
-                    className={`cursor-pointer transition-all ${
-                      data.menopauseStage === stage.id
-                        ? 'border-[#c47c50] bg-[#fdf8f5]'
-                        : 'hover:border-[#8a7060]'
-                    }`}
+                    title={stage.title}
+                    description={stage.desc}
+                    isSelected={data.menopauseStage === stage.id}
                     onClick={() => setData(prev => ({ ...prev, menopauseStage: stage.id }))}
-                  >
-                    <CardContent className="p-6">
-                      <h3 className="font-semibold text-[#2d1f14] mb-2">{stage.title}</h3>
-                      <p className="text-sm text-[#8a7060]">{stage.desc}</p>
-                    </CardContent>
-                  </Card>
+                  />
                 ))}
               </div>
             </div>
@@ -253,6 +343,58 @@ export default function OnboardingPage() {
             </div>
           )}
 
+          {/* Step 5: Location */}
+          {step === 5 && (
+            <div>
+              <h1 className="font-serif text-3xl mb-2 text-[#2d1f14]">
+                Where are you located?
+              </h1>
+              <p className="text-[#8a7060] mb-8">This helps us connect you with local resources and community members</p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-[#2d1f14] mb-2">
+                    Locality/Area
+                  </label>
+                  <Input
+                    placeholder="e.g., Indiranagar, Koramangala"
+                    value={data.location.locality}
+                    onChange={(e) => handleLocationChange('locality', e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-[#2d1f14] mb-2">
+                    City
+                  </label>
+                  <Input
+                    placeholder="e.g., Bengaluru, Mumbai, Delhi"
+                    value={data.location.city}
+                    onChange={(e) => handleLocationChange('city', e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-[#2d1f14] mb-2">
+                    State
+                  </label>
+                  <select
+                    value={data.location.India_state}
+                    onChange={(e) => handleLocationChange('India_state', e.target.value)}
+                    className="w-full px-3 py-3 border border-[#d4c4b0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c47c50] bg-white h-12"
+                  >
+                    <option value="">Select your state</option>
+                    {indianStates.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation */}
           <div className="flex justify-between mt-12">
             <Button
@@ -263,13 +405,14 @@ export default function OnboardingPage() {
               Previous
             </Button>
             
-            {step < 4 ? (
+            {step < 5 ? (
               <Button
                 variant="terracotta"
                 onClick={nextStep}
                 disabled={
                   (step === 1 && (!data.name || !data.age)) ||
-                  (step === 2 && !data.menopauseStage)
+                  (step === 2 && !data.menopauseStage) ||
+                  (step === 3 && data.symptoms.length === 0)
                 }
               >
                 Next
@@ -278,7 +421,7 @@ export default function OnboardingPage() {
               <Button
                 variant="terracotta"
                 onClick={handleSubmit}
-                disabled={loading || data.goals.length === 0}
+                disabled={loading || data.goals.length === 0 || (!data.location.locality || !data.location.city || !data.location.India_state)}
               >
                 {loading ? "Saving..." : "Complete setup"}
               </Button>

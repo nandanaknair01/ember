@@ -33,16 +33,44 @@ export default function Navbar({ variant = 'desktop', isCollapsed = false, onTog
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<{ name: string } | null>(null)
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
+      
+      if (user) {
+        // Fetch user profile to get their name
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single()
+        
+        if (profileData) {
+          setProfile(profileData)
+        }
+      }
     }
     getUser()
 
-    const subscriptionResult = supabase.auth.onAuthStateChange((event: any, session: any) => {
+    const subscriptionResult = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       setUser(session?.user || null)
+      
+      if (session?.user) {
+        // Fetch user profile to get their name
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (profileData) {
+          setProfile(profileData)
+        }
+      }
+      
       if (!session && pathname !== '/auth') {
         router.push('/auth')
       }
@@ -124,7 +152,9 @@ export default function Navbar({ variant = 'desktop', isCollapsed = false, onTog
       {user && (
         <div className="border-t border-[#e8ddd4] pt-6 mt-auto">
           <div className="mb-4">
-            <p className="text-white text-sm font-medium">{user.email}</p>
+            <p className="text-white text-sm font-medium">
+              {isCollapsed ? (profile?.name?.charAt(0).toUpperCase() || 'U') : (profile?.name || user.email)}
+            </p>
             <p className="text-[#e8ddd4] text-xs">Member</p>
           </div>
           <Button

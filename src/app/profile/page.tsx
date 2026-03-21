@@ -1,20 +1,87 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { User, Mail, Calendar, Heart, Settings } from "lucide-react"
 
+interface Profile {
+  name: string
+  email?: string
+  age?: string
+  menopause_stage: string
+  symptoms: string[]
+  interests: string[]
+  goals: string[]
+  location?: {
+    locality: string
+    city: string
+    India_state: string
+  }
+}
+
 export default function ProfilePage() {
-  const [profile, setProfile] = useState({
-    name: "Parnika",
-    email: "parnika@example.com",
-    age: 45,
-    menopause_stage: "Perimenopause",
-    symptoms: ["Hot flashes", "Sleep disruption", "Mood swings"],
-    interests: ["Yoga", "Meditation", "Reading"],
-    goals: ["Better sleep", "Stress management"]
-  })
+  const router = useRouter()
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchProfile()
+  }, [])
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        router.push('/auth')
+        return
+      }
+
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+
+      if (error) {
+        console.error('Profile fetch error:', error)
+        return
+      }
+
+      setProfile({
+        name: profileData.name,
+        email: session.user.email,
+        age: profileData.age?.toString(),
+        menopause_stage: profileData.stage,
+        symptoms: profileData.symptoms || [],
+        interests: profileData.interests || [],
+        goals: profileData.goals || [],
+        location: {
+          locality: profileData.locality || '',
+          city: profileData.city || '',
+          India_state: profileData.states || ''
+        }
+      })
+    } catch (error) {
+      console.error('Profile fetch error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="min-h-screen bg-[#fdf8f5] flex items-center justify-center">
+      <div className="text-[#8a7060]">Loading profile...</div>
+    </div>
+  }
+
+  if (!profile) {
+    return <div className="min-h-screen bg-[#fdf8f5] flex items-center justify-center">
+      <div className="text-[#8a7060]">Profile not found</div>
+    </div>
+  }
 
   return (
     <div className="min-h-screen bg-[#fdf8f5] p-8">
@@ -50,6 +117,16 @@ export default function ProfilePage() {
                     {profile.menopause_stage}
                   </span>
                 </div>
+                {profile.location && (
+                  <div className="flex justify-between">
+                    <span className="text-[#8a7060]">Location</span>
+                    <span className="font-medium text-[#2d1f14] text-sm">
+                      {profile.location.locality && `${profile.location.locality}, `}
+                      {profile.location.city && `${profile.location.city}, `}
+                      {profile.location.India_state}
+                    </span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

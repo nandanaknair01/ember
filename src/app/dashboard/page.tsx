@@ -47,33 +47,161 @@ export default function DashboardPage() {
   }, [])
 
   const fetchProfile = async () => {
-    // Mock data for demo
-    setProfile({
-      name: "Parnika",
-      menopause_stage: "Perimenopause"
-    })
-    setLoading(false)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        router.push('/auth')
+        return
+      }
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('name, stage, age')
+        .eq('id', session.user.id)
+        .single()
+
+      if (error) {
+        console.error('Profile fetch error:', error)
+        router.push('/onboarding')
+        return
+      }
+
+      setProfile({
+        name: profile.name,
+        menopause_stage: profile.stage
+      })
+    } catch (error) {
+      console.error('Profile fetch error:', error)
+      router.push('/auth')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const fetchTodayLog = async () => {
-    // Mock data for demo
-    setTodayLog({
-      mood_score: 4,
-      sleep_hours: 7
-    })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      const today = new Date().toISOString().split('T')[0]
+      const { data: logData, error } = await supabase
+        .from('daily_logs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('date', today)
+        .single()
+
+      if (error) {
+        console.error('Today log fetch error:', error)
+        return
+      }
+
+      if (logData) {
+        setTodayLog({
+          mood_score: logData.mood_score,
+          sleep_hours: logData.sleep_hours
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching today log:', error)
+    }
   }
 
   const fetchStreak = async () => {
-    // Mock streak data for demo
-    setStreak(12)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      // Calculate streak from daily logs
+      const { data: logs, error } = await supabase
+        .from('daily_logs')
+        .select('date')
+        .eq('user_id', session.user.id)
+        .order('date', { ascending: false })
+        .limit(30)
+
+      if (error) {
+        console.error('Streak fetch error:', error)
+        return
+      }
+
+      if (logs && logs.length > 0) {
+        let streak = 0
+        let currentDate = new Date()
+        
+        for (const log of logs) {
+          const logDate = new Date(log.date)
+          const diffDays = Math.floor((currentDate.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24))
+          
+          if (diffDays <= 1) {
+            streak++
+            currentDate = logDate
+          } else {
+            break
+          }
+        }
+        
+        setStreak(streak)
+      }
+    } catch (error) {
+      console.error('Error calculating streak:', error)
+    }
   }
 
   const logMood = async (mood: number) => {
-    setTodayLog(prev => ({ ...prev, mood_score: mood }))
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      const today = new Date().toISOString().split('T')[0]
+      
+      // Update or insert today's log
+      const { error } = await supabase
+        .from('daily_logs')
+        .upsert({
+          user_id: session.user.id,
+          date: today,
+          mood_score: mood,
+          sleep_hours: todayLog.sleep_hours
+        })
+
+      if (error) {
+        console.error('Mood log error:', error)
+        return
+      }
+
+      setTodayLog(prev => ({ ...prev, mood_score: mood }))
+    } catch (error) {
+      console.error('Error logging mood:', error)
+    }
   }
 
   const logSleep = async (hours: number) => {
-    setTodayLog(prev => ({ ...prev, sleep_hours: hours }))
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      const today = new Date().toISOString().split('T')[0]
+      
+      // Update or insert today's log
+      const { error } = await supabase
+        .from('daily_logs')
+        .upsert({
+          user_id: session.user.id,
+          date: today,
+          mood_score: todayLog.mood_score,
+          sleep_hours: hours
+        })
+
+      if (error) {
+        console.error('Sleep log error:', error)
+        return
+      }
+
+      setTodayLog(prev => ({ ...prev, sleep_hours: hours }))
+    } catch (error) {
+      console.error('Error logging sleep:', error)
+    }
   }
 
   const getGreeting = () => {

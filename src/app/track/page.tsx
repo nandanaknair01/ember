@@ -71,48 +71,143 @@ export default function TrackPage() {
   const saveCycleLog = async () => {
     setLoading(true)
     
-    // Mock behavior
-    console.log("Saving cycle log:", cycleLog)
-    setTimeout(() => {
-      setCycleLog({ start_date: '', flow: 'medium', notes: '' })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        alert('Please sign in to save data')
+        setLoading(false)
+        return
+      }
+
+      // Save to daily_logs table
+      const { error } = await supabase
+        .from('daily_logs')
+        .insert({
+          user_id: session.user.id,
+          date: new Date().toISOString().split('T')[0],
+          cycle_start: cycleLog.start_date,
+          flow: cycleLog.flow,
+          notes: cycleLog.notes
+        })
+
+      if (error) {
+        console.error('Cycle log error:', error)
+        alert('Error saving cycle log')
+      } else {
+        setCycleLog({ start_date: '', flow: 'medium', notes: '' })
+        alert('Cycle log saved!')
+      }
+    } catch (error) {
+      console.error('Error saving cycle log:', error)
+      alert('Error saving cycle log')
+    } finally {
       setLoading(false)
-      alert("Cycle log saved!")
-    }, 500)
+    }
   }
 
   const saveSymptomLog = async () => {
     setLoading(true)
     
-    // Mock behavior
-    console.log("Saving symptom logs:", symptomLogs)
-    setTimeout(() => {
-      setSymptomLogs([])
-      setLoading(false)
-      alert(`${symptomLogs.length} symptoms saved!`)
-    }, 500)
-  }
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        alert('Please sign in to save data')
+        setLoading(false)
+        return
+      }
 
-  const saveSleepLog = async () => {
-    setLoading(true)
-    
-    // Mock behavior
-    console.log("Saving sleep log:", sleepLog)
-    setTimeout(() => {
+      // Save to daily_logs table
+      const { error } = await supabase
+        .from('daily_logs')
+        .insert({
+          user_id: session.user.id,
+          date: new Date().toISOString().split('T')[0],
+          symptoms: symptomLogs
+        })
+
+      if (error) {
+        console.error('Symptom log error:', error)
+        alert('Error saving symptom log')
+      } else {
+        setSymptomLogs([])
+        alert(`${symptomLogs.length} symptoms saved!`)
+      }
+    } catch (error) {
+      console.error('Error saving symptom log:', error)
+      alert('Error saving symptom log')
+    } finally {
       setLoading(false)
-      alert("Sleep log saved!")
-    }, 500)
+    }
   }
 
   const saveSupplementLog = async () => {
     setLoading(true)
     
-    // Mock behavior
-    console.log("Saving supplement log:", supplementLog)
-    setTimeout(() => {
-      setSupplementLog({ supplements: [] })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        alert('Please sign in to save data')
+        setLoading(false)
+        return
+      }
+
+      // Save to daily_logs table
+      const { error } = await supabase
+        .from('daily_logs')
+        .insert({
+          user_id: session.user.id,
+          date: new Date().toISOString().split('T')[0],
+          supplement_log: supplementLog.supplements
+        })
+
+      if (error) {
+        console.error('Supplement log error:', error)
+        alert('Error saving supplement log')
+      } else {
+        setSupplementLog({ supplements: [] })
+        alert('Supplement log saved!')
+      }
+    } catch (error) {
+      console.error('Error saving supplement log:', error)
+      alert('Error saving supplement log')
+    } finally {
       setLoading(false)
-      alert(`${supplementLog.supplements.length} supplements saved!`)
-    }, 500)
+    }
+  }
+
+  const saveSleepLog = async () => {
+    setLoading(true)
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        alert('Please sign in to save data')
+        setLoading(false)
+        return
+      }
+
+      // Save to daily_logs table
+      const { error } = await supabase
+        .from('daily_logs')
+        .insert({
+          user_id: session.user.id,
+          date: new Date().toISOString().split('T')[0],
+          sleep_hours: parseInt(sleepLog.hours.toString()) || 0
+        })
+
+      if (error) {
+        console.error('Sleep log error:', error)
+        alert('Error saving sleep log')
+      } else {
+        setSleepLog({ sleep_hours: 0, sleep_quality: 3 })
+        alert('Sleep log saved!')
+      }
+    } catch (error) {
+      console.error('Error saving sleep log:', error)
+      alert('Error saving sleep log')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const toggleSymptom = (symptomName: string, severity: 1 | 2 | 3) => {

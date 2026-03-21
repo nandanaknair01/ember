@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -46,6 +47,9 @@ const getAvatarColor = (name: string) => {
 }
 
 export default function CommunityPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<{ name: string } | null>(null)
   const [posts, setPosts] = useState<CommunityPost[]>([
     {
       id: '1',
@@ -176,6 +180,55 @@ export default function CommunityPage() {
       location: "HSR Layout, Bengaluru"
     }
   ])
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      
+      if (user) {
+        // Fetch user profile to get their name
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single()
+        
+        if (profileData) {
+          setProfile(profileData)
+        }
+      }
+    }
+    getUser()
+
+    const subscriptionResult = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+      setUser(session?.user || null)
+      
+      if (session?.user) {
+        // Fetch user profile to get their name
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (profileData) {
+          setProfile(profileData)
+        }
+      }
+      
+      if (!session) {
+        router.push('/auth')
+      }
+    })
+
+    return () => {
+      if (subscriptionResult && subscriptionResult.data && subscriptionResult.data.subscription && subscriptionResult.data.subscription.unsubscribe) {
+        subscriptionResult.data.subscription.unsubscribe()
+      }
+    }
+  }, [])
+
   const [newPost, setNewPost] = useState("")
   const [activeChannel, setActiveChannel] = useState('general')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -190,13 +243,13 @@ export default function CommunityPage() {
   }
 
   const sendPost = async () => {
-    if (!newPost.trim()) return
+    if (!newPost.trim() || !profile) return
 
     const newPostObj: CommunityPost = {
       id: Date.now().toString(),
       content: newPost.trim(),
       created_at: new Date().toISOString(),
-      user: { name: "Parnika" },
+      user: { name: profile.name },
       channel: activeChannel
     }
 

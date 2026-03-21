@@ -1,37 +1,28 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Pill } from "@/components/ui/pill"
 
 export default function AuthPage() {
-  const router = useRouter()
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const handleGoogleAuth = async () => {
-    setLoading(true)
-    // For demo purposes, directly navigate to dashboard
-    router.push('/dashboard')
-    setLoading(false)
-  }
-
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleGoogleAuth = async (e?: React.MouseEvent) => {
+    e?.preventDefault()
     setLoading(true)
     
-    // For demo purposes, directly navigate to dashboard
-    router.push('/dashboard')
-    setLoading(false)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    
+    if (error) {
+      console.error('Google auth error:', error)
+      setLoading(false)
+    }
   }
-
-  const stages = ["Perimenopause", "Menopause", "Postmenopause", "Unsure"]
 
   return (
     <div className="min-h-screen flex">
@@ -71,7 +62,7 @@ export default function AuthPage() {
           
           {/* Stage pills */}
           <div className="flex flex-wrap gap-3 justify-center mb-12">
-            {stages.map((stage) => (
+            {["Perimenopause", "Menopause", "Postmenopause", "Unsure"].map((stage) => (
               <button
                 key={stage}
                 className="border border-[rgba(196,124,80,0.4)] text-[#c47c50] bg-transparent rounded-full px-[18px] py-[8px] text-[12px] hover:bg-[rgba(196,124,80,0.1)] transition-colors"
@@ -97,7 +88,7 @@ export default function AuthPage() {
       <div className="w-1/2 bg-[#fdf8f5] p-12 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full">
           <h2 className="font-serif text-3xl mb-8 text-[#2d1f14] italic">
-            {isSignUp ? "Welcome" : "Welcome back"}
+            Welcome
           </h2>
 
           {/* Google OAuth */}
@@ -115,55 +106,6 @@ export default function AuthPage() {
             </svg>
             Continue with Google
           </Button>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#c47c50] opacity-30"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#fdf8f5] text-[#8a7060] font-medium">Or</span>
-            </div>
-          </div>
-
-          {/* Email/Password Form */}
-          <form onSubmit={handleEmailAuth} className="space-y-4">
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="focus:ring-2 focus:ring-[#c47c50] focus:border-[#c47c50] transition-all duration-200"
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="focus:ring-2 focus:ring-[#c47c50] focus:border-[#c47c50] transition-all duration-200"
-            />
-            <Button
-              variant="terracotta"
-              className="w-full h-12 hover:bg-[#a66543] hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-              type="submit"
-              disabled={loading}
-            >
-              {isSignUp ? "Sign up" : "Sign in"}
-            </Button>
-          </form>
-
-          {/* Toggle */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-[#8a7060] hover:text-[#2d1f14] text-sm"
-            >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Sign up"}
-            </button>
-          </div>
         </div>
       </div>
     </div>
